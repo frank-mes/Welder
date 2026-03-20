@@ -7,7 +7,7 @@ class WelderDAO:
         # 自动识别 secrets 中的 service_account 进行读写授权
         self.conn = st.connection("gsheets", type=GSheetsConnection)
 
-    def select_all(self):
+    def update_storage(self):
         return self.conn.read(ttl=0)
 
     def save_all(self, df: pd.DataFrame):
