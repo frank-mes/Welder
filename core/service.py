@@ -2,12 +2,17 @@ import pandas as pd
 from core.dao import WelderDAO
 
 class WelderService:
-    """业务逻辑层：处理复杂的校验和数据加工"""
+     """业务逻辑层：处理复杂的校验和数据加工"""
     def __init__(self):
         self.dao = WelderDAO()
 
     def list_all(self):
-        return self.dao.fetch_all()
+        df = self.dao.fetch_all()
+        # 确保返回的是 DataFrame 即使没有数据
+        return df if isinstance(df, pd.DataFrame) else pd.DataFrame()
+    
+    # ... 其他方法保持不变 ...
+    
 
     def add_process(self, entity):
         df = self.dao.fetch_all()
