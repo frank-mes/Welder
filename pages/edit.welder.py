@@ -2,28 +2,23 @@ import streamlit as st
 from core.controller import WelderController
 from core.entity import WelderEntity
 
-st.title("📝 编辑/删除资质")
+st.set_page_config(page_title="编辑人员")
 ctrl = WelderController()
 
-search_id = st.text_input("输入身份证号查询并编辑")
-df = ctrl.get_all()
-target = df[df['id_card'] == search_id]
+# 从 URL 获取参数 (Streamlit 1.30+ 支持查询参数)
+params = st.query_params
+target_id = params.get("id")
 
-if not target.empty:
-    row = target.iloc[0]
+st.header(f"📝 编辑人员信息 ({target_id})")
+df = ctrl.dispatch_get_list()
+row = df[df['id_card'] == target_id].iloc[0] if target_id in df['id_card'].values else None
+
+if row is not None:
     with st.form("edit_form"):
-        # 回显数据逻辑 (使用 value=row['xxx'])
-        name = st.text_input("姓名", value=row['name'])
-        stamp_code = st.text_input("钢印号", value=row['stamp_code'])
-        # ... 其他字段省略，同新增页面回显 ...
-        
-        btn_update = st.form_submit_button("更新信息")
-        btn_delete = st.form_submit_button("删除人员")
-        
-        if btn_update:
-            new_entity = WelderEntity(name=name, id_card=search_id, stamp_code=stamp_code) # 补全其他
-            ctrl.update(search_id, new_entity)
-            st.success("更新成功")
-        if btn_delete:
-            ctrl.delete(search_id)
-            st.warning("已删除")
+        # 回显 row 中的数据...
+        new_name = st.text_input("姓名", value=row['name'])
+        # ...其他字段...
+        if st.form_submit_button("提交修改"):
+            new_entity = WelderEntity(name=new_name, id_card=target_id, ...)
+            ctrl.dispatch_update(target_id, new_entity)
+            st.success("修改成功！可以关闭此标签页。")
