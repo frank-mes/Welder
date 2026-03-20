@@ -5,34 +5,36 @@ class WelderService:
     def __init__(self):
         self.dao = WelderDAO()
 
-    def fetch_list(self, keyword=None):
+    def get_list(self, query=None):
         df = self.dao.select_all()
-        if keyword and not df.empty:
-            # 实现模糊查询逻辑
-            mask = df.apply(lambda row: keyword in str(row.values), axis=1)
+        if query and not df.empty:
+            # 简单的模糊搜索
+            mask = df.astype(str).apply(lambda x: query.lower() in x.str.lower().values, axis=1)
             return df[mask]
         return df
 
     def add_welder(self, entity):
         df = self.dao.select_all()
-        if not df.empty and entity.id_card in df['id_card'].values:
-            return False, "该身份证号已存在"
-        new_df = pd.concat([df, pd.DataFrame([entity.to_dict()])], ignore_index=True)
-        self.dao.save_all(new_df)
-        return True, "新增成功"
+        if not df.empty and str(entity.id_card) in df['id_card'].astype(str).values:
+            return False, "身份证号已存在"
+        
+        new_row = pd.DataFrame([entity.to_dict()])
+        updated_df = pd.concat([df, new_row], ignore_index=True)
+        self.dao.update_storage(updated_df)
+        return True, "成功存入云端"
 
     def update_welder(self, id_card, entity):
         df = self.dao.select_all()
-        idx = df.index[df['id_card'] == id_card]
+        idx = df.index[df['id_card'].astype(str) == str(id_card)]
         if not idx.empty:
             for k, v in entity.to_dict().items():
                 df.loc[idx, k] = v
-            self.dao.save_all(df)
-            return True, "修改成功"
+            self.dao.update_storage(df)
+            return True, "更新成功"
         return False, "未找到该人员"
 
     def delete_welder(self, id_card):
         df = self.dao.select_all()
-        df = df[df['id_card'] != id_card]
-        self.dao.save_all(df)
+        updated_df = df[df['id_card'].astype(str) != str(id_card)]
+        self.dao.update_storage(updated_df)
         return True, "删除成功"
