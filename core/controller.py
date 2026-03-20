@@ -4,14 +4,14 @@ class WelderController:
     def __init__(self):
         self.service = WelderService()
 
-    def dispatch_get_list(self, query=None):
-        return self.service.fetch_list(query)
+    def handle_get(self, q=None):
+        return self.service.get_list(q)
 
-    def dispatch_add(self, entity):
+    def handle_add(self, entity):
         return self.service.add_welder(entity)
 
-    def dispatch_update(self, id_card, entity):
+    def handle_edit(self, id_card, entity):
         return self.service.update_welder(id_card, entity)
 
-    def dispatch_delete(self, id_card):
+    def handle_delete(self, id_card):
         return self.service.delete_welder(id_card)
