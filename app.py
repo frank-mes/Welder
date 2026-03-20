@@ -13,12 +13,22 @@ st.title("👨‍🏭 焊工人员资质管理系统")
 # 3. 顶部操作区
 c1, c2, c3 = st.columns([1, 1, 4])
 with c1:
-    # 修复点：改用相对路径 ./add_welder
+    # 核心修复点：使用绝对路径 /add_welder，并添加简单的 CSS 样式
+    # 在 Streamlit Cloud 上，pages/add_welder.py 的标准路由就是 /add_welder
     st.markdown("""
-        <a href="./add_welder" target="_blank">
-            <button style="width:100%;height:38px;background-color:#28a745;color:white;border:none;border-radius:4px;cursor:pointer;">
+        <a href="/add_welder" target="_blank" style="text-decoration: none;">
+            <div style="
+                background-color: #28a745;
+                color: white;
+                padding: 10px;
+                text-align: center;
+                border-radius: 5px;
+                cursor: pointer;
+                font-weight: bold;
+                width: 150px;
+            ">
                 ➕ 新增人员
-            </button>
+            </div>
         </a>
     """, unsafe_allow_html=True)
 
@@ -48,12 +58,12 @@ if not df.empty:
         
         with c[8]:
             ce, cd = st.columns(2)
-            # 修复点：改用相对路径 ./edit_welder 并确保参数格式正确
-            edit_link = f"./edit_welder?id={row['id_card']}"
-            ce.markdown(f'<a href="{edit_link}" target="_blank" style="text-decoration:none;color:#007bff;">编辑</a>', unsafe_allow_html=True)
+            # 核心修复点：编辑链接也改为绝对路径格式
+            edit_url = f"/edit_welder?id={row['id_card']}"
+            ce.markdown(f'<a href="{edit_url}" target="_blank" style="color:#007bff; text-decoration:none;">编辑</a>', unsafe_allow_html=True)
             
             if cd.button("删除", key=f"del_{row['id_card']}"):
                 ctrl.handle_delete(row['id_card'])
                 st.rerun()
 else:
-    st.info("💡 库中尚无数据或未找到匹配项。")
+    st.info("💡 库中尚无数据。")
