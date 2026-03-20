@@ -6,7 +6,10 @@ class WelderController:
         self.service = WelderService()
 
     def get_all(self):
-        return self.service.list_all()
+        try:
+            return self.service.list_all()
+        except Exception as e:
+            return pd.DataFrame() # 返回空表，防止前端崩溃
 
     def create(self, entity):
         return self.service.add_process(entity)
