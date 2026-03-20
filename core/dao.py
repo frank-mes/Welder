@@ -1,45 +1,39 @@
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
+import gspread
 
 class WelderDAO:
     def __init__(self):
-        # 建立基础连接
         self.conn = st.connection("gsheets", type=GSheetsConnection)
 
     def select_all(self):
-        """
-        读取数据。
-        如果 read() 失败，利用底层 client 直接打开。
-        """
         try:
-            # 尝试标准读取（如果 secrets 配置正确，这通常能行）
+            # 1. 尝试标准读取
             return self.conn.read(ttl=0)
         except Exception:
-            # 【核心修复】如果 read() 报错 NotFound，手动调用底层 gspread 客户端
-            # spreadsheet_id 从 secrets 中直接获取
-            spreadsheet_id = st.secrets.connections.gsheets.spreadsheet
             try:
-                # 使用 open_by_key 绕过名称搜索逻辑
-                client = self.conn.client
-                sh = client.open_by_key(spreadsheet_id)
-                # 默认读取第一个工作表
-                worksheet = sh.get_worksheet(0)
-                data = worksheet.get_all_records()
-                return pd.DataFrame(data)
-            except Exception as final_e:
-                st.error("无法通过 ID 定位电子表格。")
-                st.info("请确认：1. Spreadsheet ID 正确；2. 已分享 Editor 权限给服务账号。")
-                raise final_e
+                # 2. 深度修复：直接利用 secrets 里的凭据手动构建 client
+                # 这样可以绕过 st.connection 可能存在的配置读取 Bug
+                conf = st.secrets.connections.gsheets
+                spreadsheet_id = conf.spreadsheet
+                
+                # 获取底层 client 并直接通过 ID 打开
+                sh = self.conn.client.open_by_key(spreadsheet_id)
+                worksheet = sh.get_worksheet(0) # 打开第一个标签页
+                
+                records = worksheet.get_all_records()
+                return pd.DataFrame(records)
+            except Exception as e:
+                st.error("🚨 致命错误：Google 依然报告找不到该表格。")
+                st.info("请检查 Google Cloud 是否同时开启了 Sheets 和 Drive API，并确认表格已分享给 Service Account 邮箱。")
+                return pd.DataFrame()
 
     def update_storage(self, df: pd.DataFrame):
-        """
-        写入数据。
-        """
         try:
-            # 填补空值，避免 JSON 序列化错误
+            # 预处理：将所有 NaN 转换为字符串，防止 API 报错
             df = df.fillna("")
             return self.conn.update(data=df)
         except Exception as e:
-            st.error(f"写入失败: {e}")
+            st.error(f"保存失败: {e}")
             return None
