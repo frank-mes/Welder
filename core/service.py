@@ -2,26 +2,38 @@ import pandas as pd
 from core.dao import WelderDAO
 
 class WelderService:
+    """业务逻辑层：处理复杂的校验和数据加工"""
     def __init__(self):
         self.dao = WelderDAO()
 
-    def get_all_welders(self):
-        return self.dao.select_all()
+    def list_all(self):
+        return self.dao.fetch_all()
 
-    def create_welder(self, entity):
-        df = self.dao.select_all()
-        # 校验：身份证号唯一性
+    def add_process(self, entity):
+        df = self.dao.fetch_all()
+        # 业务校验：防止重复录入
         if entity.id_card in df['id_card'].values:
-            return False, "错误：该身份证号已存在！"
+            return False, f"身份证号 {entity.id_card} 已存在！"
         
-        # 转换 Entity 为 DataFrame 行并追加
-        new_row = pd.DataFrame([entity.to_dict()])
-        updated_df = pd.concat([df, new_row], ignore_index=True)
-        self.dao.update_sheet(updated_df)
-        return True, "人员新增成功！"
+        new_df = pd.concat([df, pd.DataFrame([entity.to_dict()])], ignore_index=True)
+        self.dao.commit(new_df)
+        return True, "录入成功"
 
-    def delete_welder(self, id_card):
-        df = self.dao.select_all()
-        updated_df = df[df['id_card'] != id_card]
-        self.dao.update_sheet(updated_df)
-        return True, "人员已删除"
+    def update_process(self, id_card, entity):
+        df = self.dao.fetch_all()
+        if id_card not in df['id_card'].values:
+            return False, "未找到该人员"
+        
+        # 逻辑：定位行并替换数据
+        idx = df.index[df['id_card'] == id_card]
+        for key, value in entity.to_dict().items():
+            df.loc[idx, key] = value
+            
+        self.dao.commit(df)
+        return True, "更新完成"
+
+    def delete_process(self, id_card):
+        df = self.dao.fetch_all()
+        df = df[df['id_card'] != id_card]
+        self.dao.commit(df)
+        return True, "删除成功"
