@@ -7,16 +7,18 @@ st.set_page_config(page_title="焊工管理系统", layout="wide")
 # 2. 强制隐藏左侧菜单栏
 st.markdown("<style>[data-testid='stSidebarNav'] {display: none;}</style>", unsafe_allow_html=True)
 
+# 定义基础 URL（请根据你的部署地址微调）
+BASE_URL = "https://welder-uuvjqqkl6banajtz3b9ri4.streamlit.app"
+
 ctrl = WelderController()
 st.title("👨‍🏭 焊工人员资质管理系统")
 
 # 3. 顶部操作区
 c1, c2, c3 = st.columns([1, 1, 4])
 with c1:
-    # 核心修复点：使用绝对路径 /add_welder，并添加简单的 CSS 样式
-    # 在 Streamlit Cloud 上，pages/add_welder.py 的标准路由就是 /add_welder
-    st.markdown("""
-        <a href="/add_welder" target="_blank" style="text-decoration: none;">
+    # 修复点：直接指向全路径，强制浏览器寻找该资源
+    st.markdown(f"""
+        <a href="{BASE_URL}/add_welder" target="_blank" style="text-decoration: none;">
             <div style="
                 background-color: #28a745;
                 color: white;
@@ -35,10 +37,9 @@ with c1:
 with c3:
     keyword = st.text_input("", placeholder="搜索姓名、身份证或钢印号...", label_visibility="collapsed")
 
-# 4. 获取数据
+# 4. 获取数据并渲染列表
 df = ctrl.handle_get(keyword)
 
-# 5. 渲染列表
 if not df.empty:
     cols = st.columns([1, 1, 2, 1, 1, 1, 1, 1, 2])
     labels = ["姓名", "性别", "身份证", "钢印号", "车间", "班组", "大证", "小证", "操作栏"]
@@ -58,12 +59,10 @@ if not df.empty:
         
         with c[8]:
             ce, cd = st.columns(2)
-            # 核心修复点：编辑链接也改为绝对路径格式
-            edit_url = f"/edit_welder?id={row['id_card']}"
+            # 修复点：全路径 + Query Params
+            edit_url = f"{BASE_URL}/edit_welder?id={row['id_card']}"
             ce.markdown(f'<a href="{edit_url}" target="_blank" style="color:#007bff; text-decoration:none;">编辑</a>', unsafe_allow_html=True)
             
             if cd.button("删除", key=f"del_{row['id_card']}"):
                 ctrl.handle_delete(row['id_card'])
                 st.rerun()
-else:
-    st.info("💡 库中尚无数据。")
