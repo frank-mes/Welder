@@ -47,12 +47,22 @@ class WelderDAO:
 
     def update_storage(self, df: pd.DataFrame):
         try:
+            # 1. 打开表格
             sh = self.gc.open_by_key(self.spreadsheet_id)
             worksheet = sh.get_worksheet(0)
-            # 清除旧数据并写入新数据
+            
+            # 2. 核心修复：处理 NaN 值，防止 JSON 报错
+            # fillna("") 会将所有空值替换成空字符串
+            clean_df = df.fillna("")
+            
+            # 3. 准备数据：包含表头 + 数据行
+            # 确保转换后的列表不包含任何 numpy.nan 对象
+            header = [clean_df.columns.values.tolist()]
+            rows = clean_df.values.tolist()
+            data = header + rows
+            
+            # 4. 覆盖写入
             worksheet.clear()
-            # 将 DataFrame 转换为带表头的列表
-            data = [df.columns.values.tolist()] + df.values.tolist()
             worksheet.update('A1', data)
             return True
         except Exception as e:
