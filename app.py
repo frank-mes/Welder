@@ -34,7 +34,11 @@ if not df.empty:
         cols[5].write(row['team'])
         cols[6].write(row['cert_large'])
         cols[7].write(row['cert_small'])
-        
+
+        with col_btn1:
+    # 注意：URL 路径直接写文件名（不带 .py），Streamlit 会自动识别
+    st.markdown('<a href="/add_welder" target="_blank"><button style="width:100%;height:40px;background-color:#28a745;color:white;border:none;border-radius:5px;cursor:pointer;">➕ 新增人员</button></a>', unsafe_allow_html=True)
+    
         # 操作栏按钮
         with cols[8]:
             c_edit, c_del = st.columns(2)
