@@ -2,6 +2,7 @@ from dataclasses import dataclass, asdict
 
 @dataclass
 class WelderEntity:
+    """焊工实体类：严格对应数据库字段"""
     id: str = ""
     name: str = ""
     gender: str = ""
