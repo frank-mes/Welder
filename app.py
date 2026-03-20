@@ -1,52 +1,51 @@
 import streamlit as st
 from core.controller import WelderController
 
-st.set_page_config(page_title="焊工资质管理", layout="wide")
-ctrl = WelderController()
+# 配置页面与隐藏侧边栏
+st.set_page_config(page_title="焊工管理系统", layout="wide")
+st.markdown("<style>[data-testid='stSidebarNav'] {display: none;}</style>", unsafe_allow_html=True)
 
+ctrl = WelderController()
 st.title("👨‍🏭 焊工人员资质管理系统")
 
-# 1. 顶部操作区
-col_btn1, col_btn2, col_search = st.columns([1, 1, 4])
-with col_btn1:
-    # 引导至新标签页
-    st.markdown('<a href="/新增人员" target="_blank"><button style="width:100%;height:40px;background-color:#28a745;color:white;border:none;border-radius:5px;cursor:pointer;">➕ 新增人员</button></a>', unsafe_allow_html=True)
-with col_search:
-    keyword = st.text_input("", placeholder="输入姓名或身份证号查询...", label_visibility="collapsed")
+# 顶部导航与搜索
+c1, c2, c3 = st.columns([1, 1, 4])
+with c1:
+    # 跳转至 pages/add_welder.py
+    st.markdown('<a href="/add_welder" target="_blank"><button style="width:100%;height:38px;background-color:#28a745;color:white;border:none;border-radius:4px;cursor:pointer;">➕ 新增人员</button></a>', unsafe_allow_html=True)
 
-# 2. 数据展示区
-df = ctrl.dispatch_get_list(keyword)
+with c3:
+    keyword = st.text_input("", placeholder="搜索姓名、身份证或钢印号...", label_visibility="collapsed")
 
+df = ctrl.handle_get(keyword)
+
+# 渲染列表
 if not df.empty:
-    # 模拟大厂的操作栏：遍历数据并生成按钮
-    header_cols = st.columns([1, 1, 2, 1, 1, 1, 1, 1, 2])
-    fields = ["姓名", "性别", "身份证号", "钢印号", "车间", "班组", "大证", "小证", "操作"]
-    for col, field in zip(header_cols, fields):
-        col.write(f"**{field}**")
+    # 表头
+    cols = st.columns([1, 1, 2, 1, 1, 1, 1, 1, 2])
+    labels = ["姓名", "性别", "身份证", "钢印号", "车间", "班组", "大证", "小证", "操作栏"]
+    for col, label in zip(cols, labels):
+        col.write(f"**{label}**")
     
+    # 行数据
     for _, row in df.iterrows():
-        cols = st.columns([1, 1, 2, 1, 1, 1, 1, 1, 2])
-        cols[0].write(row['name'])
-        cols[1].write(row['gender'])
-        cols[2].write(row['id_card'])
-        cols[3].write(row['stamp_code'])
-        cols[4].write(row['workshop'])
-        cols[5].write(row['team'])
-        cols[6].write(row['cert_large'])
-        cols[7].write(row['cert_small'])
-
-        with col_btn1:
-    # 注意：URL 路径直接写文件名（不带 .py），Streamlit 会自动识别
-    st.markdown('<a href="/add_welder" target="_blank"><button style="width:100%;height:40px;background-color:#28a745;color:white;border:none;border-radius:5px;cursor:pointer;">➕ 新增人员</button></a>', unsafe_allow_html=True)
-    
-        # 操作栏按钮
-        with cols[8]:
-            c_edit, c_del = st.columns(2)
-            # 编辑按钮跳转新标签页 (带参数)
-            edit_url = f"/编辑人员?id={row['id_card']}"
-            c_edit.markdown(f'<a href="{edit_url}" target="_blank">编辑</a>', unsafe_allow_html=True)
-            if c_del.button("删除", key=f"del_{row['id_card']}"):
-                ctrl.dispatch_delete(row['id_card'])
+        c = st.columns([1, 1, 2, 1, 1, 1, 1, 1, 2])
+        c[0].write(row['name'])
+        c[1].write(row['gender'])
+        c[2].write(row['id_card'])
+        c[3].write(row['stamp_code'])
+        c[4].write(row['workshop'])
+        c[5].write(row['team'])
+        c[6].write(row['cert_large'])
+        c[7].write(row['cert_small'])
+        
+        # 操作逻辑
+        with c[8]:
+            ce, cd = st.columns(2)
+            # 跳转至 pages/edit_welder.py
+            ce.markdown(f'<a href="/edit_welder?id={row["id_card"]}" target="_blank">编辑</a>', unsafe_allow_html=True)
+            if cd.button("删除", key=f"del_{row['id_card']}"):
+                ctrl.handle_delete(row['id_card'])
                 st.rerun()
 else:
-    st.warning("暂无匹配数据")
+    st.info("💡 库中尚无数据或未找到匹配项。")
