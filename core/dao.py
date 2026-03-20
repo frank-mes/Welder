@@ -4,26 +4,23 @@ import pandas as pd
 
 class WelderDAO:
     def __init__(self):
-        # 建立连接：它会自动从 .streamlit/secrets.toml 中读取 [connections.gsheets] 配置
+        # 建立连接时，明确告诉它我们要用 secrets 里的配置
         self.conn = st.connection("gsheets", type=GSheetsConnection)
 
     def select_all(self):
-        # ttl=0 强制跳过缓存，确保每次读取都是云端最新数据
-        # 显式指定 worksheet 保证读取位置准确
-        return self.conn.read(worksheet="Sheet1", ttl=0)
+        # 如果 read() 报错，尝试不带任何参数，
+        # 它会默认读取 spreadsheet 定义的第一个工作表
+        try:
+            return self.conn.read(ttl=0)
+        except Exception:
+            # 如果上面失败，手动指定 URL 模式绕过某些版本的 Bug
+            # 注意：这里的 spreadsheet 是从 secrets 自动获取的 ID
+            return self.conn.read(worksheet="Sheet1", ttl=0)
 
     def update_storage(self, df: pd.DataFrame):
-        """
-        核心写入方法：将最新的 DataFrame 覆盖写入到 Google Sheets
-        """
         try:
-            # 关键修复：显式指定 worksheet="Sheet1"
-            # 这样可以强制 API 锁定到具体工作表，避免 UnsupportedOperationError
-            return self.conn.update(worksheet="Sheet1", data=df)
+            # 确保 data 是 DataFrame 格式
+            return self.conn.update(data=df)
         except Exception as e:
-            st.error("🚨 写入 Google Sheets 失败！")
-            with st.expander("点击查看错误详情"):
-                st.write("1. 请确认 Service Account 邮箱已在表格中设为 'Editor' 权限。")
-                st.write("2. 请确认 .streamlit/secrets.toml 中的 spreadsheet ID 正确且不含 URL 冗余。")
-                st.code(str(e))
+            st.error(f"写入失败: {e}")
             return None
