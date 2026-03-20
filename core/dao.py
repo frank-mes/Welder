@@ -4,36 +4,42 @@ import pandas as pd
 
 class WelderDAO:
     def __init__(self):
-        # 建立连接
+        # 建立基础连接
         self.conn = st.connection("gsheets", type=GSheetsConnection)
 
     def select_all(self):
         """
-        读取数据。如果 Sheet1 不存在，则尝试不带参数读取第一个工作表。
+        读取数据。
+        如果 read() 失败，利用底层 client 直接打开。
         """
         try:
-            # 方案 A：显式指定工作表名称（请确保你的表格底部标签确实叫 Sheet1）
-            return self.conn.read(worksheet="Sheet1", ttl=0)
+            # 尝试标准读取（如果 secrets 配置正确，这通常能行）
+            return self.conn.read(ttl=0)
         except Exception:
+            # 【核心修复】如果 read() 报错 NotFound，手动调用底层 gspread 客户端
+            # spreadsheet_id 从 secrets 中直接获取
+            spreadsheet_id = st.secrets.connections.gsheets.spreadsheet
             try:
-                # 方案 B：如果不叫 Sheet1，则尝试默认读取第一个工作表
-                return self.conn.read(ttl=0)
-            except Exception as e:
-                st.error("无法找到指定的电子表格或工作表。")
-                st.info(f"请检查服务账号是否已获授权，且 Spreadsheet ID 正确。")
-                raise e
+                # 使用 open_by_key 绕过名称搜索逻辑
+                client = self.conn.client
+                sh = client.open_by_key(spreadsheet_id)
+                # 默认读取第一个工作表
+                worksheet = sh.get_worksheet(0)
+                data = worksheet.get_all_records()
+                return pd.DataFrame(data)
+            except Exception as final_e:
+                st.error("无法通过 ID 定位电子表格。")
+                st.info("请确认：1. Spreadsheet ID 正确；2. 已分享 Editor 权限给服务账号。")
+                raise final_e
 
     def update_storage(self, df: pd.DataFrame):
         """
-        更新数据到云端
+        写入数据。
         """
         try:
-            # 强制覆盖写入
-            return self.conn.update(worksheet="Sheet1", data=df)
+            # 填补空值，避免 JSON 序列化错误
+            df = df.fillna("")
+            return self.conn.update(data=df)
         except Exception as e:
-            # 如果写入失败，尝试不带 worksheet 参数自动匹配
-            try:
-                return self.conn.update(data=df)
-            except Exception as final_error:
-                st.error(f"写入失败: {final_error}")
-                return None
+            st.error(f"写入失败: {e}")
+            return None
