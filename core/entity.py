@@ -4,7 +4,7 @@ from dataclasses import dataclass, asdict
 class WelderEntity:
     name: str = ""
     gender: str = ""
-    id_card: str = ""     # 业务主键
+    id_card: str = ""
     stamp_code: str = ""
     workshop: str = ""
     team: str = ""
