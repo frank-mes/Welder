@@ -4,8 +4,8 @@ from core.controller import WelderController
 st.set_page_config(page_title="焊工管理系统", layout="wide")
 st.markdown("<style>[data-testid='stSidebarNav'] {display: none;}</style>", unsafe_allow_html=True)
 
-ctrl = WelderController()
-st.title("👨‍🏭 焊工人员资质管理系统")
+ctrl = WelderController() # 创建了一个名叫 WelderController 的类的实例（对象），并把这个对象赋值给了变量 ctrl
+st.title("👨‍🏭 焊工人员资质管理系统") # st 是 Streamlit 的核心模块
 
 c1, c2, c3 = st.columns([1, 1, 4])
 with c1:
